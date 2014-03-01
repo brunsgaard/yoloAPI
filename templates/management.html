@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+  </head>
+<body>
+
+<h1>Users</h1>
+<p> There are {{ users|length }} in the system </p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Id</th>
+      <th>User</th>
+      <th>pass</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for user in users %}
+  <tr>
+    <td>{{ user.id }}</td>
+    <td>{{ user.username }}</td>
+    <td>{{ user.password }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3>Add user</h3>
+<form method="post" action="/">
+  <input type="text" name="username" placeholder ="username">
+  <input type="text" name="password" placeholder ="password">
+  <input type="submit" name='submit' value='adduser'>
+</form>
+
+<h1>Client</h1>
+<p> There are {{ clients|length }} in the system </p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Id</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for client in clients %}
+  <tr>
+    <td>{{ client.id }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+
+<h3>Add client</h3>
+<p>Generate new client</p>
+<form method="post" action="/">
+   <input type="submit" name='submit' value='addclient'>
+</form>
+
+</body>
+</html>
+
+
+

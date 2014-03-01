@@ -1,4 +1,8 @@
-from app import db
+from datetime import datetime, timedelta
+from werkzeug.security import gen_salt
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 
 class User(db.Model):
@@ -7,6 +11,23 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(40), unique=True)
     password = db.Column(db.String(40))
+
+    @staticmethod
+    def find(username, password=None):
+        if password:
+            return User.filter_by(username=username, password=password).first()
+        else:
+            return User.filter_by(username=username).first()
+
+    @staticmethod
+    def save(username, password):
+        user = User(username=username, password=password)
+        db.session.add(user)
+        db.session.commit()
+
+    @staticmethod
+    def all():
+        return User.query.all()
 
 
 class Client(db.Model):
@@ -44,9 +65,23 @@ class Client(db.Model):
     id = db.Column(db.String(40), primary_key=True)
     type = db.Column(db.String(40))
 
+    @staticmethod
+    def find(id):
+        return Client.query.filter_by(id=id).first()
+
+    @staticmethod
+    def generate():
+        client = Client(id=gen_salt(40), type='password')
+        db.session.add(client)
+        db.session.commit()
+
+    @staticmethod
+    def all():
+        return Client.query.all()
+
 
 class Token(db.Model):
-    """Token that allows access to the API
+    """Access or refresh token
 
     Note that an access token is aware about to which user and client it was
     issued, thus we can identify which user is making a request based on this
@@ -55,15 +90,11 @@ class Token(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    client_id = db.Column(
-        db.String(40), db.ForeignKey('client.client_id'),
-        nullable=False,
-    )
+    client_id = db.Column(db.String(40), db.ForeignKey('client.id'),
+                          nullable=False)
     client = db.relationship('Client')
 
-    user_id = db.Column(
-        db.Integer, db.ForeignKey('user.id')
-    )
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User')
 
     # currently only bearer is supported
@@ -72,3 +103,34 @@ class Token(db.Model):
     access_token = db.Column(db.String(255), unique=True)
     refresh_token = db.Column(db.String(255), unique=True)
     expires = db.Column(db.DateTime)
+
+    @staticmethod
+    def find(access_token=None, refresh_token=None):
+        if access_token:
+            return Token.query.filter_by(access_token=access_token).first()
+        elif refresh_token:
+            return Token.query.filter_by(refresh_token=refresh_token).first()
+
+    @staticmethod
+    def save(token, request, *args, **kwargs):
+        toks = Token.query.filter_by(
+            client_id=request.client.client_id,
+            user_id=request.user.id
+        )
+        # make sure that every client has only one token connected to a user
+        for t in toks:
+            db.session.delete(t)
+
+        expires_in = token.pop('expires_in')
+        expires = datetime.utcnow() + timedelta(seconds=expires_in)
+
+        tok = Token(
+            access_token=token['access_token'],
+            refresh_token=token['refresh_token'],
+            token_type=token['token_type'],
+            expires=expires,
+            client_id=request.client.id,
+            user_id=request.user.id,
+        )
+        db.session.add(tok)
+        db.session.commit()
