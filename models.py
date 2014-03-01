@@ -13,11 +13,12 @@ class User(db.Model):
     password = db.Column(db.String(40))
 
     @staticmethod
-    def find(username, password=None):
+    def find_with_password(username, password, *args, **kwargs):
         if password:
-            return User.filter_by(username=username, password=password).first()
+            return User.query.filter_by(
+                username=username, password=password).first()
         else:
-            return User.filter_by(username=username).first()
+            return User.query.filter_by(username=username).first()
 
     @staticmethod
     def save(username, password):
@@ -62,22 +63,33 @@ class Client(db.Model):
 
     """
 
-    id = db.Column(db.String(40), primary_key=True)
-    type = db.Column(db.String(40))
+    client_id = db.Column(db.String(40), primary_key=True)
+    client_type = db.Column(db.String(40))
+
+    @property
+    def allowed_grant_types(self):
+        return ['password']
+
+    @property
+    def default_scopes(self):
+        return []
 
     @staticmethod
     def find(id):
-        return Client.query.filter_by(id=id).first()
+        return Client.query.filter_by(client_id=id).first()
 
     @staticmethod
     def generate():
-        client = Client(id=gen_salt(40), type='password')
+        client = Client(client_id=gen_salt(40), client_type='public')
         db.session.add(client)
         db.session.commit()
 
     @staticmethod
     def all():
         return Client.query.all()
+
+    def default_redirect_uri():
+        return ''
 
 
 class Token(db.Model):
@@ -90,7 +102,7 @@ class Token(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    client_id = db.Column(db.String(40), db.ForeignKey('client.id'),
+    client_id = db.Column(db.String(40), db.ForeignKey('client.client_id'),
                           nullable=False)
     client = db.relationship('Client')
 
@@ -129,7 +141,7 @@ class Token(db.Model):
             refresh_token=token['refresh_token'],
             token_type=token['token_type'],
             expires=expires,
-            client_id=request.client.id,
+            client_id=request.client.client_id,
             user_id=request.user.id,
         )
         db.session.add(tok)

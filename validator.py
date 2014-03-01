@@ -1,20 +1,27 @@
 from flask_oauthlib.provider import OAuth2Provider, OAuth2RequestValidator
 from models import User, Client, Token
+import logging
+
+log = logging.getLogger('flask_oauthlib')
 
 oauth = OAuth2Provider()
 
 class MyRequestValidator(OAuth2RequestValidator):
 
-    _clientgetter = Client.find
-
-    _usergetter = User.find
-
-    _tokengetter = Token.find
-    _tokensetter = Token.save
-
-    _grantgetter = lambda *args, **kwargs: None
-    _grantsetter = lambda *args, **kwargs: None
 
     def __init__(self):
-        pass
+        self._clientgetter = Client.find
+
+        self._usergetter = User.find_with_password
+
+        self._tokengetter = Token.find
+        self._tokensetter = Token.save
+
+        self._grantgetter = lambda *args, **kwargs: None
+        self._grantsetter = lambda *args, **kwargs: None
+
+    def client_authentication_required(self, request, *args, **kwargs):
+        return False
+
+
 

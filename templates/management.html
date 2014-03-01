@@ -41,12 +41,14 @@
   <thead>
     <tr>
       <th>Id</th>
+      <th>type</th>
     </tr>
   </thead>
   <tbody>
   {% for client in clients %}
   <tr>
-    <td>{{ client.id }}</td>
+    <td>{{ client.client_id }}</td>
+    <td>{{ client.client_type }}</td>
   </tr>
   {% endfor %}
   </tbody>
