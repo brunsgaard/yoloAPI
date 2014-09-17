@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from werkzeug.security import gen_salt
 from flask_sqlalchemy import SQLAlchemy
 
+
 db = SQLAlchemy()
 
 
@@ -37,7 +38,7 @@ class Client(db.Model):
     RFC 6749 Section 2 describes clients.
 
     One thing to note is that redirection URIs are mandatory for clients. We
-    skip this requrement as this example will only allow the resource owner
+    skip this requirement as this example will only allow the resource owner
     password credentials grant(described in section 4.3).
 
      +----------+
@@ -115,6 +116,7 @@ class Token(db.Model):
     access_token = db.Column(db.String(255), unique=True)
     refresh_token = db.Column(db.String(255), unique=True)
     expires = db.Column(db.DateTime)
+    scopes = ['']
 
     @staticmethod
     def find(access_token=None, refresh_token=None):
@@ -127,11 +129,11 @@ class Token(db.Model):
     def save(token, request, *args, **kwargs):
         toks = Token.query.filter_by(
             client_id=request.client.client_id,
-            user_id=request.user.id
-        )
-        # make sure that every client has only one token connected to a user
-        for t in toks:
-            db.session.delete(t)
+            user_id=request.user.id)
+
+        # Make sure that there is only one Grant Token for every
+        # (client, user) combination.
+        [db.session.delete(t) for t in toks]
 
         expires_in = token.pop('expires_in')
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
