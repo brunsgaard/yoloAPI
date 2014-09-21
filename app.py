@@ -4,14 +4,13 @@ from core import db, oauth
 from views import yoloapi
 
 
-def create_app():
+def create_app(settings_override=None):
     app = Flask(__name__)
 
     # Update configuration
-    app.config.update({
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///db.sqlite',
-        'DEBUG': True
-    })
+    app.config.from_object('settings')
+    app.config.from_pyfile('settings.cfg', silent=True)
+    app.config.from_object(settings_override)
 
     # Initialize extensions on the application
     db.init_app(app)
@@ -22,6 +21,7 @@ def create_app():
     app.register_blueprint(yoloapi)
 
     return app
+
 
 if __name__ == '__main__':
 

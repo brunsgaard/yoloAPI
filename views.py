@@ -4,6 +4,7 @@ from core import oauth
 
 yoloapi = Blueprint('yoloApi', __name__)
 
+
 # set endpoint for token handler
 @yoloapi.route('/oauth/token', methods=['POST'])
 @oauth.token_handler
