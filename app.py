@@ -1,35 +1,37 @@
 from flask import Flask
-from flask import render_template
-from models import db, User, Client
-from flask import request
-from flask_oauthlib.provider import OAuth2Provider
 from validator import MyRequestValidator
-import logging
+from core import db, oauth
+from views import yoloapi
 
-# Show us some logging info from flask_aouthlib
-logger = logging.getLogger('flask_oauthlib')
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
-app = Flask(__name__)
-app.debug = True
-app.config.update(
-    {
+def create_app():
+    app = Flask(__name__)
+
+    # Update configuration
+    app.config.update({
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///db.sqlite',
         'DEBUG': True
-    }
-)
+    })
 
-# Setup database
-db.init_app(app)
+    # Initialize extensions on the application
+    db.init_app(app)
+    oauth.init_app(app)
+    oauth._validator = MyRequestValidator()
 
-# Prepare flask_oauthlib Provider
-oauth = OAuth2Provider(app)
-oauth._validator = MyRequestValidator()
+    # Register views on the application
+    app.register_blueprint(yoloapi)
 
-
-
+    return app
 
 if __name__ == '__main__':
+
+    # We like flask_oauthlib logging for this application
+    import logging
+    logger = logging.getLogger('flask_oauthlib')
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
+
+    # Create app, create SQL schemes in db and run the application
+    app = create_app()
     db.create_all(app=app)
     app.run()

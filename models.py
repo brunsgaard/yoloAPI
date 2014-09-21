@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta
 from werkzeug.security import gen_salt
-from flask_sqlalchemy import SQLAlchemy
-
-
-db = SQLAlchemy()
+from core import db
 
 
 class User(db.Model):
