@@ -5,12 +5,10 @@ from flask import Flask
 from validator import MyRequestValidator
 from core import db, oauth
 from views import yoloapi
-from OpenSSL import SSL
 
 
 def create_app(settings_override=None):
-    """
-        Method for creating and initializing application.
+    """ Method for creating and initializing application.
 
         :param settings_override: Dictionary of settings to override.
     """
