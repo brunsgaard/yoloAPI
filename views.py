@@ -22,9 +22,9 @@ def access_token(*args, **kwargs):
 @yoloapi.route('/', methods=['GET', 'POST'])
 def management():
     """ This endpoint is for vieweing and adding users and clients. """
-    if request.method == 'POST' and request.form['submit'] == 'adduser':
+    if request.method == 'POST' and request.form['submit'] == 'Add User':
         User.save(request.form['username'], request.form['password'])
-    if request.method == 'POST' and request.form['submit'] == 'addclient':
+    if request.method == 'POST' and request.form['submit'] == 'Add Client':
         Client.generate()
     return render_template('management.html', users=User.all(), clients=Client.all())
 
