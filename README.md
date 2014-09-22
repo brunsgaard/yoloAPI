@@ -10,7 +10,7 @@ Clone this repository and install all dependencies:
 $ pip install -r requirements.txt
 ```
 
-Once all dependencies are installed, you may run the application with `python app.py`.
+Once all dependencies are installed, you may run the application using `python app.py`.
 
 ## User and Client Management
 
