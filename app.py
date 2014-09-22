@@ -5,7 +5,7 @@ from flask import Flask
 from validator import MyRequestValidator
 from core import db, oauth
 from views import yoloapi
-
+from OpenSSL import SSL
 
 def create_app(settings_override=None):
      """
@@ -42,4 +42,4 @@ if __name__ == '__main__':
     # Create app and SQL schemas in database, then run the application.
     app = create_app()
     db.create_all(app=app)
-    app.run()
+    app.run(ssl_context='adhoc')
