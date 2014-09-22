@@ -39,7 +39,7 @@ YOLO! Congraulations, you made it through and accessed the protected resource!
 ## Security
 
 ### SSL/TLS
-When working with OAuth 2.0, all communications must be encrypted with SSL/TLS. This example uses auto-generated SSL certificates, however in a production environment you should use a more formal, widely trusted certificate associated with your domain.
+When working with OAuth 2.0, all communications must be encrypted with SSL/TLS. This example uses auto-generated SSL certificates, however in a production environment you should use a more formal, widely trusted certificate associated with your domain. In addition, requests should be handled by something like NGINX and proxied to the authentication service.
 
 *Note: Add `-k` to your curl arguments if you are working with an untrusted development server running under SSL/TLS.*
 
