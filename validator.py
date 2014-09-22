@@ -7,10 +7,10 @@ from models import User, Client, Token
 
 class MyRequestValidator(OAuth2RequestValidator):
     """ Defines a custom OAuth2 Request Validator based on the Client, User
-	and Token models.
+        and Token models.
 
-	:param OAuth2RequestValidator: Overrides the OAuth2RequestValidator.
-	"""
+        :param OAuth2RequestValidator: Overrides the OAuth2RequestValidator.
+    """
     def __init__(self):
         self._clientgetter = Client.find
         self._usergetter = User.find_with_password
