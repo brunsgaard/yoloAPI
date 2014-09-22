@@ -34,3 +34,6 @@ $ curl -H "Authorization: Bearer NYODXSR8KalTPnWUib47t5E8Pi8mo4" http://localhos
 YOLO! Congraulations, you made it through and accessed the protected resource!
 ```
 
+## Security
+This example uses bcrypt and a randomly generated salt to hash each user password before it is added to the database. You should never store passwords in plain text!
+
