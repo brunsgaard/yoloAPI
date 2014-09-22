@@ -1,5 +1,6 @@
 Flask
 Flask-SQLAlchemy
+bcrypt
 
 # We need pull #151, which are not in version 0.7.0, thus we get flask-oauthlib
 # directly from git.
