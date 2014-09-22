@@ -19,6 +19,12 @@ def access_token(*args, **kwargs):
     """
     return None
 
+@yoloapi.route('/oauth/revoke', methods=['POST'])
+@oauth.revoke_handler
+def revoke_token():
+    """ This endpoint allows a user to revoke their access token."""
+    pass
+
 @yoloapi.route('/', methods=['GET', 'POST'])
 def management():
     """ This endpoint is for vieweing and adding users and clients. """
