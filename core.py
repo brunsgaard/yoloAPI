@@ -1,5 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
-The core module holds generic functions and the flask extensions
+The core module holds generic functions and the Flask extensions.
 """
 
 from flask_sqlalchemy import SQLAlchemy
