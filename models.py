@@ -55,7 +55,7 @@ class User(db.Model):
 class Client(db.Model):
     """ Client application through which user is authenticating.
 
-    RFC 6749 Section 2 (http://tools.ietf.org/html/rfc6749#section-2) 
+    RFC 6749 Section 2 (http://tools.ietf.org/html/rfc6749#section-2)
     describes clients:
 
     +----------+
@@ -84,7 +84,7 @@ class Client(db.Model):
 
     :param db.Model: Base class for database models.
     """
-    client_id    d= db.Column(db.String(40), primary_key=True)
+    client_id = db.Column(db.String(40), primary_key=True)
     client_type = db.Column(db.String(40))
 
     @property
@@ -130,13 +130,13 @@ class Client(db.Model):
 
     def default_redirect_uri():
         """ Return a blank default redirect URI since we are not implementing
-            redirects. 
+            redirects.
         """
         return ''
 
 
 class Token(db.Model):
-    """ Access or refresh token 
+    """ Access or refresh token
 
         Because of our current grant flow, we are able to associate tokens
         with the users who are requesting them. This can be used to track usage
@@ -157,7 +157,7 @@ class Token(db.Model):
 
     @staticmethod
     def find(access_token=None, refresh_token=None):
-        """ Retrieve a token record using submitted access token or 
+        """ Retrieve a token record using submitted access token or
         refresh token.
 
         :param access_token: User access token.
@@ -175,7 +175,7 @@ class Token(db.Model):
         :param token: Token dictionary containing access and refresh tokens, plus token type.
         :param request: Request dictionary containing information about the client and user.
         :param *args: Variable length argument list.
-        :param **kwargs: Arbitrary keyword arguments.  
+        :param **kwargs: Arbitrary keyword arguments.
         """
         toks = Token.query.filter_by(
             client_id=request.client.client_id,
