@@ -17,7 +17,7 @@
                             <tr>
                                 <th>User ID</th>
                                 <th>Username</th>
-                                <th>Password</th>
+                                <th>Password Hash</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -25,7 +25,7 @@
                             <tr>
                                 <td>{{ user.id }}</td>
                                 <td>{{ user.username }}</td>
-                                <td>{{ user.password }}</td>
+                                <td>{{ user.hashpw }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
