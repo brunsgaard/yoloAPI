@@ -23,14 +23,14 @@ After creating a user and client, you may use curl to test the application.
 ### Generating a Bearer Token
 
 ```bash
-curl -X POST -d "client_id=9qFbZD4udTzFVYo0u5UzkZX9iuzbdcJDRAquTfRk&grant_type=password&username=jonas&password=pass" http://localhost:5000/oauth/token
+$ curl -X POST -d "client_id=9qFbZD4udTzFVYo0u5UzkZX9iuzbdcJDRAquTfRk&grant_type=password&username=jonas&password=pass" http://localhost:5000/oauth/token
 {"access_token": "NYODXSR8KalTPnWUib47t5E8Pi8mo4", "token_type": "Bearer", "refresh_token": "s6L6OPL2bnKSRSbgQM3g0wbFkJB4ML", "scope": ""}
 ```
 
 ### Accessing a Protected Resource Using Retrieved Bearer Token
 
 ```bash
-curl -H "Authorization: Bearer NYODXSR8KalTPnWUib47t5E8Pi8mo4" http://localhost:5000/yolo
+$ curl -H "Authorization: Bearer NYODXSR8KalTPnWUib47t5E8Pi8mo4" http://localhost:5000/yolo
 YOLO! Congraulations, you made it through and accessed the protected resource!
 ```
 
