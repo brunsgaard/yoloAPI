@@ -110,6 +110,13 @@ class Client(db.Model):
         return Client.query.filter_by(client_id=id).first()
 
     @staticmethod
+    def delete(self):
+        """ Delete existing token. """
+        db.session.delete(self)
+        db.session(commit)
+        return self
+
+    @staticmethod
     def generate():
         """ Generate a new public client with the ObjectID helper."""
         client = Client(client_id=gen_salt(40), client_type='public')
