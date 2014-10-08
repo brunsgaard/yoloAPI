@@ -5,9 +5,11 @@
 The core module holds generic functions and the Flask extensions.
 """
 
-from flask_sqlalchemy import SQLAlchemy
+from flask.ext.mongoalchemy import MongoAlchemy
 from flask_oauthlib.provider import OAuth2Provider
+from redis import StrictRedis
+from settings import REDIS_URL
 
-
-db = SQLAlchemy()
+db = MongoAlchemy()
 oauth = OAuth2Provider()
+redis = StrictRedis.from_url(REDIS_URL)

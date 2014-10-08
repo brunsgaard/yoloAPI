@@ -15,4 +15,4 @@ class MyRequestValidator(OAuth2RequestValidator):
         self._clientgetter = Client.find
         self._usergetter = User.find_with_password
         self._tokengetter = Token.find
-        self._tokensetter = Token.save
+        self._tokensetter = Token.stash

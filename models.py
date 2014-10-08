@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from flask.ext.mongoalchemy import MongoAlchemy
 from datetime import datetime, timedelta
-from werkzeug.security import gen_salt
-from core import db
+from core import db, redis
 import bcrypt
 
-
-class User(db.Model):
+class User(db.Document):
     """ User which will be querying resources from the API.
 
-    :param db.Model: Base class for database models.
+    :param db.Document: MongoDB document object.
     """
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(40), unique=True)
-    hashpw = db.Column(db.String(80))
+    id       = db.ObjectIdField(required=True)
+    username = db.StringField(required=True)
+    hashpw   = db.StringField(required=True)
 
     @staticmethod
     def find_with_password(username, password, *args, **kwargs):
@@ -31,40 +30,37 @@ class User(db.Model):
         user = User.query.filter_by(username=username).first()
         if user and password:
             encodedpw = password.encode('utf-8')
-            userhash = user.hashpw.encode('utf-8')
-            return User.query.filter(
-                User.username == username,
-                User.hashpw == bcrypt.hashpw(encodedpw, userhash)
-            ).first()
+            userhash  = user.hashpw.encode('utf-8')
+            return User.query.filter(User.username == username, User.hashpw == bcrypt.hashpw(encodedpw, userhash)).first()
         else:
             return user
 
     @staticmethod
-    def save(username, password):
-        """ Create a new User record with the supplied username and password.
+    def create(username, password):
+        """ Create a new User document with the supplied username and password.
 
         :param username: Username of the user.
         :param password: Password of the user.
         """
-        salt = bcrypt.gensalt()
-        hash = bcrypt.hashpw(password.encode('utf-8'), salt)
-        user = User(username=username, hashpw=hash)
-        db.session.add(user)
-        db.session.commit()
+        user_id = db.ObjectIdField().gen()
+        salt    = bcrypt.gensalt()
+        hash    = bcrypt.hashpw(password.encode('utf-8'), salt)
+        user    = User(id=user_id, username=username, hashpw=hash)
+        user.save()
 
     @staticmethod
     def all():
-        """ Return all User records found in the database. """
+        """ Return all User documents found in the database. """
         return User.query.all()
 
 
-class Client(db.Model):
+class Client(db.Document):
     """ Client application through which user is authenticating.
 
     RFC 6749 Section 2 (http://tools.ietf.org/html/rfc6749#section-2)
     describes clients:
 
-    +----------+
+     +----------+
      | Resource |
      |  Owner   |
      |          |
@@ -88,10 +84,10 @@ class Client(db.Model):
     Server will not redirect the user as described in subsection 3.1.2
     (Redirection Endpoint).
 
-    :param db.Model: Base class for database models.
+    :param db.Document: MongoDB document object.
     """
-    client_id = db.Column(db.String(40), primary_key=True)
-    client_type = db.Column(db.String(40))
+    client_id   = db.ObjectIdField(required=True)
+    client_type = db.StringField(max_length=40, required=True)
 
     @property
     def allowed_grant_types(self):
@@ -116,18 +112,11 @@ class Client(db.Model):
         return Client.query.filter_by(client_id=id).first()
 
     @staticmethod
-    def delete(self):
-        """ Delete existing token. """
-        db.session.delete(self)
-        db.session.commit()
-        return self
-
-    @staticmethod
     def generate():
         """ Generate a new public client with the ObjectID helper."""
-        client = Client(client_id=gen_salt(40), client_type='public')
-        db.session.add(client)
-        db.session.commit()
+        client_id = db.ObjectIdField().gen()
+        client    = Client(client_id=client_id, client_type='public')
+        client.save()
 
     @staticmethod
     def all():
@@ -141,30 +130,28 @@ class Client(db.Model):
         return ''
 
 
-class Token(db.Model):
+class Token(db.Document):
     """ Access or refresh token
 
         Because of our current grant flow, we are able to associate tokens
         with the users who are requesting them. This can be used to track usage
         and potential abuse. Only bearer tokens currently supported.
 
-        :param db.Model: Base class for database models.
+        :param db.Document: MongoDB document object.
     """
-    id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.String(40), db.ForeignKey('client.client_id'),
-                          nullable=False)
-    client = db.relationship('Client')
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = db.relationship('User')
-    token_type = db.Column(db.String(40))
-    access_token = db.Column(db.String(255), unique=True)
-    refresh_token = db.Column(db.String(255), unique=True)
-    expires = db.Column(db.DateTime)
-    scopes = ['']
+    client_id     = db.SRefField(Client, required=True)
+    client        = client_id.rel()
+    user_id       = db.SRefField(User, required=True)
+    user          = user_id.rel()
+    token_type    = db.StringField(max_length=40)
+    access_token  = db.StringField(max_length=40)
+    refresh_token = db.StringField(max_length=40)
+    expires       = db.DateTimeField()
+    scopes        = ['']
 
     @staticmethod
     def find(access_token=None, refresh_token=None):
-        """ Retrieve a token record using submitted access token or
+        """ Retrieve a token record using submitted access token or 
         refresh token.
 
         :param access_token: User access token.
@@ -176,23 +163,31 @@ class Token(db.Model):
             return Token.query.filter_by(refresh_token=refresh_token).first()
 
     @staticmethod
-    def save(token, request, *args, **kwargs):
-        """ Save a new token to the database.
+    def delete(self):
+        """ Delete token from MongoDB and Redis cache. """
+        self.remove()
+        redis.delete(self.access_token)
+        return self
 
-        :param token: Token dictionary containing access and refresh tokens,
-            plus token type.
-        :param request: Request dictionary containing information about the
-            client and user.
+    @staticmethod
+    def stash(token, request, *args, **kwargs):
+        """ Save a new token to the MongoDB token collection.
+
+        The stash function also manipulates tokens in the local Redis cache, so the API can
+        validate if a token is acceptable without needing to know anything about a user's
+        credentials.
+
+        :param token: Token dictionary containing access and refresh tokens, plus token type.
+        :param request: Request dictionary containing information about the client and user.
         :param *args: Variable length argument list.
-        :param **kwargs: Arbitrary keyword arguments.
+        :param **kwargs: Arbitrary keyword arguments.  
         """
-        toks = Token.query.filter_by(
-            client_id=request.client.client_id,
-            user_id=request.user.id)
+        toks = Token.query.filter_by(client_id=request.client.client_id, user_id=request.user.id)
 
-        # Make sure that there is only one grant token for every
-        # (client, user) combination.
-        [db.session.delete(t) for t in toks]
+        # Ensure each client has only one token connected per user.
+        for t in toks:
+            t.remove()
+            redis.delete(t.access_token)
 
         expires_in = token.pop('expires_in')
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
@@ -203,7 +198,13 @@ class Token(db.Model):
             token_type=token['token_type'],
             expires=expires,
             client_id=request.client.client_id,
-            user_id=request.user.id,
+            user_id=request.user.id
         )
-        db.session.add(tok)
-        db.session.commit()
+
+        # Add the access token to the Redis cache and set it to
+        # expire at the appropriate time.
+        user = User.query.filter_by(id=request.user.id).first()
+        tokenuser = user.username
+        redis.setex(token['access_token'], expires_in, tokenuser)
+
+        tok.save()
