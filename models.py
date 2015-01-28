@@ -162,6 +162,10 @@ class Token(db.Model):
     expires = db.Column(db.DateTime)
     scopes = ['']
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     @staticmethod
     def find(access_token=None, refresh_token=None):
         """ Retrieve a token record using submitted access token or
