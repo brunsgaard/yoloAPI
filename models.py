@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from flask.ext.mongoalchemy import MongoAlchemy
 from datetime import datetime, timedelta
-from core import db, redis
+from ohiauth.core import db, redis
+from werkzeug.security import gen_salt
 import bcrypt
 
 class User(db.Document):
@@ -12,7 +12,7 @@ class User(db.Document):
     :param db.Document: MongoDB document object.
     """
 
-    id       = db.ObjectIdField(required=True)
+    id       = db.StringField(required=True)
     username = db.StringField(required=True)
     hashpw   = db.StringField(required=True)
 
@@ -31,7 +31,7 @@ class User(db.Document):
         if user and password:
             encodedpw = password.encode('utf-8')
             userhash  = user.hashpw.encode('utf-8')
-            return User.query.filter(User.username == username, User.hashpw == bcrypt.hashpw(encodedpw, userhash)).first()
+            return User.query.filter(User.username == username, User.hashpw == bcrypt.hashpw(encodedpw, userhash).decode('utf-8')).first()
         else:
             return user
 
@@ -42,11 +42,20 @@ class User(db.Document):
         :param username: Username of the user.
         :param password: Password of the user.
         """
-        user_id = db.ObjectIdField().gen()
-        salt    = bcrypt.gensalt()
-        hash    = bcrypt.hashpw(password.encode('utf-8'), salt)
+        user_id = gen_salt(40)
+        salt    = bcrypt.gensalt(13)
+        hash    = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
         user    = User(id=user_id, username=username, hashpw=hash)
         user.save()
+
+    @staticmethod
+    def delete_with_id(userid):
+        """ Deletes a User document with the specified id.
+        
+        :param userid: User id of user to be deleted.
+        """
+        user = User.query.filter_by(id=userid).first()
+        user.remove()
 
     @staticmethod
     def all():
@@ -86,7 +95,7 @@ class Client(db.Document):
 
     :param db.Document: MongoDB document object.
     """
-    client_id   = db.ObjectIdField(required=True)
+    client_id   = db.StringField(required=True)
     client_type = db.StringField(max_length=40, required=True)
 
     @property
@@ -113,8 +122,8 @@ class Client(db.Document):
 
     @staticmethod
     def generate():
-        """ Generate a new public client with the ObjectID helper."""
-        client_id = db.ObjectIdField().gen()
+        """ Generate a new public client."""
+        client_id = gen_salt(40)
         client    = Client(client_id=client_id, client_type='public')
         client.save()
 
@@ -139,15 +148,23 @@ class Token(db.Document):
 
         :param db.Document: MongoDB document object.
     """
-    client_id     = db.SRefField(Client, required=True)
-    client        = client_id.rel()
-    user_id       = db.SRefField(User, required=True)
-    user          = user_id.rel()
+    client_id     = db.StringField(required=True)
+    user_id       = db.StringField(required=True)
     token_type    = db.StringField(max_length=40)
     access_token  = db.StringField(max_length=40)
     refresh_token = db.StringField(max_length=40)
     expires       = db.DateTimeField()
     scopes        = ['']
+    
+    @property
+    def user(self):
+        """Return the user with the associated user_id."""
+        return User.query.filter_by(id=self.user_id).first()
+
+    @property
+    def client(self):
+        """Return the client with the associated client_id."""
+        return Client.query.filter_by(client_id=self.client_id).first()
 
     @staticmethod
     def find(access_token=None, refresh_token=None):
@@ -162,12 +179,21 @@ class Token(db.Document):
         elif refresh_token:
             return Token.query.filter_by(refresh_token=refresh_token).first()
 
-    @staticmethod
     def delete(self):
         """ Delete token from MongoDB and Redis cache. """
-        self.remove()
         redis.delete(self.access_token)
-        return self
+        self.remove()
+    
+    @staticmethod
+    def delete_by_userid(userid):
+        """Delete all tokens associated with a specific user id.
+
+        :param userid: The ID of the user.
+        """
+        toks = Token.query.filter_by(user_id=userid)
+        for t in toks:
+            t.remove()
+            redis.delete(t.access_token)
 
     @staticmethod
     def stash(token, request, *args, **kwargs):
